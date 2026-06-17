@@ -1,14 +1,11 @@
 name: Deploy PWA to GitHub Pages
 
-# Deploys to GitHub Pages from the default branch (now public). Live at:
-#   https://caytec.github.io/At-Data-center-Sim/
-# Builds the GigaRack web app and deploys it to GitHub Pages using GitHub's
-# official Actions flow, which enables Pages via the workflow token (no manual
-# Settings toggle). Live at https://caytec.github.io/At-Data-center-Sim/
-#
-# NOTE: GitHub Pages requires the repo to be PUBLIC (or on a paid plan). On a
-# free private repo the `configure-pages` step fails with a clear permissions
-# error — make the repo public (Settings → General → Change visibility).
+# Builds the GigaRack web app and publishes it to the `gh-pages` branch.
+# The repo's Actions token cannot create a Pages site via the API, so enable
+# Pages ONCE in the UI (your account has the needed permission):
+#   Settings → Pages → Build and deployment → Source: "Deploy from a branch"
+#   → Branch: gh-pages → / (root) → Save.
+# Live at: https://caytec.github.io/At-Data-center-Sim/  (auto-updates on every push)
 #
 # The backend URL is injected from the repository Actions VARIABLE `API_URL`
 # (Settings → Secrets and variables → Actions → Variables). If unset, the game
@@ -25,19 +22,15 @@ on:
       - 'package-lock.json'
       - '.github/workflows/deploy-pages.yml'
 
-# Permissions required by the official Pages deployment flow.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Allow one concurrent Pages deployment; don't cancel an in-progress one.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-deploy
+  cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,32 +43,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Enables Pages on the repo (if needed) and configures the build env.
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Build web (PWA)
+      - name: Build web (PWA) for GitHub Pages
         env:
-          # Project-pages subpath; must match the repo name.
           VITE_BASE: /At-Data-center-Sim/
-          # Live backend URL (optional). Set repo variable API_URL to enable.
           VITE_API_URL: ${{ vars.API_URL }}
         run: npm run build -w web
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Publish to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: web/dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/dist
+          publish_branch: gh-pages
+          force_orphan: true
