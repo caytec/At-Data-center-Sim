@@ -15,16 +15,21 @@ offline-fallback mode). Add the backend whenever you want the live global board.
 ## 1. Frontend → GitHub Pages
 
 The workflow [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml)
-builds `web/` and publishes it to a `gh-pages` branch on every push to the feature
-branch (and on manual trigger).
+builds `web/`, publishes it to a `gh-pages` branch, **and auto-enables GitHub Pages via
+the Pages API** — no manual Settings toggle required.
 
 1. **Run the workflow.** It runs automatically on push, or trigger it manually:
    GitHub → **Actions** → *Deploy PWA to GitHub Pages* → **Run workflow**.
-2. **Enable Pages (one time).** GitHub → **Settings → Pages** → **Source: Deploy from a
-   branch** → **Branch: `gh-pages`** → **/ (root)** → **Save**.
-3. Wait ~1 minute. Your game is live at:
+2. Wait ~1 minute. Your game is live at:
 
    **https://caytec.github.io/At-Data-center-Sim/**
+
+   (The workflow log prints the live URL as a notice.)
+
+> ⚠️ **Private repo caveat:** GitHub Pages on a **private** repo requires a **paid**
+> plan. On a **free** plan the auto-enable step emits a warning and the site won't
+> serve until you make the repo **public** (Settings → General → Danger Zone → Change
+> visibility). Once public, just re-run the workflow — everything else is automatic.
 
 Open it on desktop and on your phone; "Add to Home Screen" installs it as an app.
 

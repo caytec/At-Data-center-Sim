@@ -1,9 +1,12 @@
 name: Deploy PWA to GitHub Pages
 
-# Builds the GigaRack web app and publishes it to the `gh-pages` branch.
-# After the first successful run, enable Pages once: Settings → Pages →
-# Source = "Deploy from a branch" → Branch: gh-pages / (root).
-# The live site is then served at https://caytec.github.io/At-Data-center-Sim/
+# Builds the GigaRack web app, publishes it to the `gh-pages` branch, and then
+# auto-enables GitHub Pages (serving from gh-pages) via the Pages API using the
+# workflow's own token — so no manual Settings toggle is needed.
+# The live site is served at https://caytec.github.io/At-Data-center-Sim/
+#
+# NOTE: GitHub Pages on a PRIVATE repo requires a paid plan. On a free plan the
+# auto-enable step warns (and the site won't serve) until the repo is made public.
 #
 # The backend URL is injected from the repository Actions VARIABLE `API_URL`
 # (Settings → Secrets and variables → Actions → Variables). If it is unset, the
@@ -22,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 concurrency:
   group: pages-deploy
@@ -57,3 +61,27 @@ jobs:
           publish_branch: gh-pages
           # Single-page-app friendly; also drops a .nojekyll file automatically.
           force_orphan: true
+
+      - name: Enable GitHub Pages (serve from gh-pages, no manual toggle)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          echo "Enabling Pages with source = gh-pages / root ..."
+          out=$(gh api -X POST "repos/${{ github.repository }}/pages" \
+            -f "source[branch]=gh-pages" -f "source[path]=/" 2>&1)
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "$out"
+            # Already enabled? Update the source instead.
+            gh api -X PUT "repos/${{ github.repository }}/pages" \
+              -f "source[branch]=gh-pages" -f "source[path]=/" 2>&1
+          fi
+          # Report the resulting live URL (if Pages is active).
+          url=$(gh api "repos/${{ github.repository }}/pages" --jq .html_url 2>/dev/null)
+          if [ -n "$url" ]; then
+            echo "::notice title=GitHub Pages live::$url"
+          else
+            echo "::warning title=Pages not enabled::Could not enable Pages automatically. A private repo needs a paid plan or to be made Public (Settings → General → Change visibility). The built site is on the gh-pages branch and will serve as soon as the repo is eligible."
+          fi
+          exit 0
