@@ -1,0 +1,22 @@
+{
+  "name": "gigarack",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GigaRack — AI Data Center Tycoon. An educational idle/MMO game that teaches business from total basics through the real economics of running an AI data center.",
+  "workspaces": [
+    "web",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w server & npm run dev -w web",
+    "dev:web": "npm run dev -w web",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build -w web",
+    "test": "npm run test -w web",
+    "preview": "npm run preview -w web"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
