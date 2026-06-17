@@ -13,6 +13,13 @@ It is a Progressive Web App: installable on a phone, works offline, and keeps
 earning while you're away. A small backend powers a shared global leaderboard and a
 market-demand index every player feels at once.
 
+<p align="center">
+  <img src="docs/screenshots/1-onboarding.png" width="24%" alt="Onboarding — pick a handle and difficulty" />
+  <img src="docs/screenshots/2-dashboard-build.png" width="24%" alt="Live income statement and build panel" />
+  <img src="docs/screenshots/3-codex.png" width="24%" alt="Business 101 codex" />
+  <img src="docs/screenshots/4-leaderboard.png" width="24%" alt="Global leaderboard" />
+</p>
+
 ---
 
 ## Why this exists
