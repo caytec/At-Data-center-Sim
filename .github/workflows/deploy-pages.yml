@@ -1,5 +1,7 @@
 name: Deploy PWA to GitHub Pages
 
+# Deploys to GitHub Pages from the default branch (now public). Live at:
+#   https://caytec.github.io/At-Data-center-Sim/
 # Builds the GigaRack web app and deploys it to GitHub Pages using GitHub's
 # official Actions flow, which enables Pages via the workflow token (no manual
 # Settings toggle). Live at https://caytec.github.io/At-Data-center-Sim/
