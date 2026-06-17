@@ -1,16 +1,16 @@
 name: Deploy PWA to GitHub Pages
 
-# Builds the GigaRack web app, publishes it to the `gh-pages` branch, and then
-# auto-enables GitHub Pages (serving from gh-pages) via the Pages API using the
-# workflow's own token — so no manual Settings toggle is needed.
-# The live site is served at https://caytec.github.io/At-Data-center-Sim/
+# Builds the GigaRack web app and deploys it to GitHub Pages using GitHub's
+# official Actions flow, which enables Pages via the workflow token (no manual
+# Settings toggle). Live at https://caytec.github.io/At-Data-center-Sim/
 #
-# NOTE: GitHub Pages on a PRIVATE repo requires a paid plan. On a free plan the
-# auto-enable step warns (and the site won't serve) until the repo is made public.
+# NOTE: GitHub Pages requires the repo to be PUBLIC (or on a paid plan). On a
+# free private repo the `configure-pages` step fails with a clear permissions
+# error — make the repo public (Settings → General → Change visibility).
 #
 # The backend URL is injected from the repository Actions VARIABLE `API_URL`
-# (Settings → Secrets and variables → Actions → Variables). If it is unset, the
-# game builds in offline-leaderboard mode and is still fully playable.
+# (Settings → Secrets and variables → Actions → Variables). If unset, the game
+# builds in offline-leaderboard mode and is still fully playable.
 
 on:
   workflow_dispatch: {}
@@ -23,16 +23,19 @@ on:
       - 'package-lock.json'
       - '.github/workflows/deploy-pages.yml'
 
+# Permissions required by the official Pages deployment flow.
 permissions:
-  contents: write
+  contents: read
   pages: write
+  id-token: write
 
+# Allow one concurrent Pages deployment; don't cancel an in-progress one.
 concurrency:
-  group: pages-deploy
-  cancel-in-progress: true
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +48,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web (PWA) for GitHub Pages
+      # Enables Pages on the repo (if needed) and configures the build env.
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Build web (PWA)
         env:
           # Project-pages subpath; must match the repo name.
           VITE_BASE: /At-Data-center-Sim/
@@ -53,35 +62,18 @@ jobs:
           VITE_API_URL: ${{ vars.API_URL }}
         run: npm run build -w web
 
-      - name: Publish to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./web/dist
-          publish_branch: gh-pages
-          # Single-page-app friendly; also drops a .nojekyll file automatically.
-          force_orphan: true
+          path: web/dist
 
-      - name: Enable GitHub Pages (serve from gh-pages, no manual toggle)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set +e
-          echo "Enabling Pages with source = gh-pages / root ..."
-          out=$(gh api -X POST "repos/${{ github.repository }}/pages" \
-            -f "source[branch]=gh-pages" -f "source[path]=/" 2>&1)
-          code=$?
-          if [ $code -ne 0 ]; then
-            echo "$out"
-            # Already enabled? Update the source instead.
-            gh api -X PUT "repos/${{ github.repository }}/pages" \
-              -f "source[branch]=gh-pages" -f "source[path]=/" 2>&1
-          fi
-          # Report the resulting live URL (if Pages is active).
-          url=$(gh api "repos/${{ github.repository }}/pages" --jq .html_url 2>/dev/null)
-          if [ -n "$url" ]; then
-            echo "::notice title=GitHub Pages live::$url"
-          else
-            echo "::warning title=Pages not enabled::Could not enable Pages automatically. A private repo needs a paid plan or to be made Public (Settings → General → Change visibility). The built site is on the gh-pages branch and will serve as soon as the repo is eligible."
-          fi
-          exit 0
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
