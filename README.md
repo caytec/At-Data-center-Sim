@@ -46,22 +46,32 @@ Full game design: [`docs/DESIGN.md`](docs/DESIGN.md).
 
 ---
 
-## Quick start
+## ▶️ Run it on your laptop (one command)
 
-Requires **Node 22+** (the backend uses the built-in `node:sqlite`).
+Requires **Node 22+** (the backend uses the built-in `node:sqlite`). Then:
 
 ```bash
-npm install            # installs web + server workspaces
-
-# Terminal A — backend (leaderboard + market demand)
-npm run dev:server     # http://localhost:8787
-
-# Terminal B — game (PWA)
-npm run dev:web        # http://localhost:5173
+git clone https://github.com/caytec/At-Data-center-Sim.git
+cd At-Data-center-Sim
+git checkout claude/ai-datacenter-simulator-teaching-o8udoe
+npm install
+npm run dev
 ```
 
-Open http://localhost:5173, pick a difficulty, and power on. Open it on your phone
-(same network, via the LAN URL Vite prints) and "Add to Home Screen" to install.
+`npm run dev` starts **both** the backend (`http://localhost:8787`) and the game
+(`http://localhost:5173`) in one terminal, with labeled output; press **Ctrl+C** to stop
+both. Now open **http://localhost:5173**, pick a difficulty, and power on.
+
+> Already have the repo? Just `git pull && npm install && npm run dev`.
+> On your phone: open the LAN URL Vite prints (same Wi‑Fi) and "Add to Home Screen" to
+> install it as an app.
+
+### Run the pieces separately (optional)
+
+```bash
+npm run dev:server     # backend only → http://localhost:8787
+npm run dev:web        # game only    → http://localhost:5173
+```
 
 ### Other scripts
 

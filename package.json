@@ -8,12 +8,15 @@
     "server"
   ],
   "scripts": {
-    "dev": "npm run dev -w server & npm run dev -w web",
+    "dev": "concurrently -k -n server,web -c green,cyan \"npm:dev:server\" \"npm:dev:web\"",
     "dev:web": "npm run dev -w web",
     "dev:server": "npm run dev -w server",
     "build": "npm run build -w web",
     "test": "npm run test -w web",
     "preview": "npm run preview -w web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   },
   "engines": {
     "node": ">=20"
