@@ -8,7 +8,16 @@
  */
 import type { Difficulty } from '../engine/types';
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://localhost:8787';
+/**
+ * Backend base URL.
+ * - If VITE_API_URL is set (e.g. the deployed Render URL), use it.
+ * - Otherwise default to the local dev server, but ONLY in dev. In a production
+ *   static build (e.g. GitHub Pages) with no backend configured, API_URL is empty
+ *   and every call short-circuits to offline behavior — avoiding mixed-content
+ *   errors when an https page would otherwise try to reach http://localhost.
+ */
+const configured = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '');
+const API_URL = configured || (import.meta.env.DEV ? 'http://localhost:8787' : '');
 const QUEUE_KEY = 'gigarack.scorequeue.v1';
 const PLAYER_KEY = 'gigarack.playerid.v1';
 
@@ -53,6 +62,7 @@ function writeQueue(q: ScoreSubmission[]): void {
 }
 
 async function postScore(sub: ScoreSubmission): Promise<boolean> {
+  if (!API_URL) throw new Error('no backend configured');
   const res = await fetch(`${API_URL}/scores`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -95,6 +105,7 @@ export async function flushQueue(): Promise<void> {
 }
 
 export async function fetchLeaderboard(board: Board, playerId: string): Promise<LeaderboardEntry[]> {
+  if (!API_URL) throw new Error('no backend configured');
   const res = await fetch(`${API_URL}/leaderboard?board=${board}&playerId=${encodeURIComponent(playerId)}`);
   if (!res.ok) throw new Error(`leaderboard failed: ${res.status}`);
   return (await res.json()) as LeaderboardEntry[];
@@ -105,6 +116,7 @@ export async function fetchLeaderboard(board: Board, playerId: string): Promise<
  * "we're in one market" signal. Falls back to a sensible default offline.
  */
 export async function fetchDemand(): Promise<number | null> {
+  if (!API_URL) return null;
   try {
     const res = await fetch(`${API_URL}/demand`);
     if (!res.ok) return null;

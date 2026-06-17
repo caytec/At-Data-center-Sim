@@ -1,0 +1,25 @@
+# Render Blueprint — deploys the GigaRack leaderboard backend on Render's free tier.
+# https://render.com/docs/blueprint-spec
+#
+# To use: push this repo to GitHub, then in Render → "New +" → "Blueprint" → pick this
+# repo. Render reads this file and creates the service. After it deploys, copy the
+# service URL (e.g. https://gigarack-api.onrender.com) into the GitHub Actions repo
+# variable `API_URL` and re-run the "Deploy PWA to GitHub Pages" workflow.
+#
+# Free-tier notes: the service spins down after ~15 min idle (cold start ~50s), and
+# its filesystem is ephemeral, so the leaderboard resets on each redeploy. The game
+# client handles this gracefully (offline fallback + queued score submissions).
+services:
+  - type: web
+    name: gigarack-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm run start -w server
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # node:sqlite (used by the backend) requires Node >= 22.
+      - key: NODE_VERSION
+        value: "22"

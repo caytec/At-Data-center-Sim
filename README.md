@@ -20,6 +20,18 @@ market-demand index every player feels at once.
   <img src="docs/screenshots/4-leaderboard.png" width="24%" alt="Global leaderboard" />
 </p>
 
+## 🎮 Live demo
+
+- **Play (GitHub Pages):** https://caytec.github.io/At-Data-center-Sim/
+- **Leaderboard API (Render):** `https://gigarack-api.onrender.com` *(optional — set up for the live global board)*
+
+Hosting both for free takes a few clicks — see **[`docs/DEPLOY.md`](docs/DEPLOY.md)**.
+The game is fully playable with the frontend alone; the backend just powers the live
+global leaderboard.
+
+> Until Pages is enabled in repo settings, the link above 404s — the deploy workflow is
+> included and ready; flip **Settings → Pages → Source: `gh-pages`** to go live.
+
 ---
 
 ## Why this exists
