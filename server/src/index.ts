@@ -9,10 +9,18 @@
  *   POST /scores             -> { ok: true } | 400 { error }
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { fileURLToPath } from 'node:url';
 import { leaderboard, recordScore } from './db.ts';
+import { makeStaticHandler } from './static.ts';
 import { validateSubmission, type Board } from './validate.ts';
 
 const PORT = Number(process.env.PORT || 8787);
+
+// Optionally serve the built web app (single-service deploy). Defaults to
+// ../../web/dist relative to this file; override with GIGARACK_STATIC.
+const STATIC_DIR =
+  process.env.GIGARACK_STATIC || fileURLToPath(new URL('../../web/dist', import.meta.url));
+const staticHandler = makeStaticHandler(STATIC_DIR);
 
 // --- helpers ---
 function send(res: ServerResponse, status: number, data: unknown): void {
@@ -109,6 +117,9 @@ const server = createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
 
+    // Serve the built web app for any other GET (single-service deploy).
+    if (req.method === 'GET' && staticHandler.serve(url.pathname, res)) return;
+
     return send(res, 404, { error: 'not found' });
   } catch (err) {
     return send(res, 400, { error: (err as Error).message });
@@ -117,4 +128,9 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`GigaRack backend listening on http://localhost:${PORT}`);
+  if (staticHandler.enabled) {
+    console.log(`Serving web app from ${staticHandler.root}`);
+  } else {
+    console.log('Web app not found (API-only mode). Build web/dist to serve the game too.');
+  }
 });

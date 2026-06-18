@@ -9,15 +9,19 @@
 import type { Difficulty } from '../engine/types';
 
 /**
- * Backend base URL.
- * - If VITE_API_URL is set (e.g. the deployed Render URL), use it.
- * - Otherwise default to the local dev server, but ONLY in dev. In a production
- *   static build (e.g. GitHub Pages) with no backend configured, API_URL is empty
- *   and every call short-circuits to offline behavior — avoiding mixed-content
- *   errors when an https page would otherwise try to reach http://localhost.
+ * Backend base URL, from VITE_API_URL at build time:
+ * - `"same-origin"` (or `"/"`) → call relative paths on the current origin. Use this
+ *   when one server hosts BOTH the game and the API (single-service deploy, e.g. a VPS).
+ * - a full URL (e.g. a Render URL) → call that origin.
+ * - unset + dev → `http://localhost:8787` (local dev servers).
+ * - unset + prod → no backend: every call short-circuits to offline behavior (e.g.
+ *   GitHub Pages static hosting), avoiding mixed-content errors on https.
  */
-const configured = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '');
-const API_URL = configured || (import.meta.env.DEV ? 'http://localhost:8787' : '');
+const raw = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+const SAME_ORIGIN = raw === 'same-origin' || raw === '/';
+const configuredUrl = SAME_ORIGIN ? '' : raw?.replace(/\/$/, '');
+const API_BASE = SAME_ORIGIN ? '' : configuredUrl || (import.meta.env.DEV ? 'http://localhost:8787' : '');
+const HAS_BACKEND = SAME_ORIGIN || Boolean(configuredUrl) || Boolean(import.meta.env.DEV);
 const QUEUE_KEY = 'gigarack.scorequeue.v1';
 const PLAYER_KEY = 'gigarack.playerid.v1';
 
@@ -62,8 +66,8 @@ function writeQueue(q: ScoreSubmission[]): void {
 }
 
 async function postScore(sub: ScoreSubmission): Promise<boolean> {
-  if (!API_URL) throw new Error('no backend configured');
-  const res = await fetch(`${API_URL}/scores`, {
+  if (!HAS_BACKEND) throw new Error('no backend configured');
+  const res = await fetch(`${API_BASE}/scores`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(sub),
@@ -105,8 +109,8 @@ export async function flushQueue(): Promise<void> {
 }
 
 export async function fetchLeaderboard(board: Board, playerId: string): Promise<LeaderboardEntry[]> {
-  if (!API_URL) throw new Error('no backend configured');
-  const res = await fetch(`${API_URL}/leaderboard?board=${board}&playerId=${encodeURIComponent(playerId)}`);
+  if (!HAS_BACKEND) throw new Error('no backend configured');
+  const res = await fetch(`${API_BASE}/leaderboard?board=${board}&playerId=${encodeURIComponent(playerId)}`);
   if (!res.ok) throw new Error(`leaderboard failed: ${res.status}`);
   return (await res.json()) as LeaderboardEntry[];
 }
@@ -116,9 +120,9 @@ export async function fetchLeaderboard(board: Board, playerId: string): Promise<
  * "we're in one market" signal. Falls back to a sensible default offline.
  */
 export async function fetchDemand(): Promise<number | null> {
-  if (!API_URL) return null;
+  if (!HAS_BACKEND) return null;
   try {
-    const res = await fetch(`${API_URL}/demand`);
+    const res = await fetch(`${API_BASE}/demand`);
     if (!res.ok) return null;
     const data = (await res.json()) as { demand: number };
     return data.demand;

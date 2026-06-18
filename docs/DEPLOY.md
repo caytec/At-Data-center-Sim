@@ -1,5 +1,30 @@
 # Deploying GigaRack for free
 
+## 0. Deploy on your own VPS (e.g. mikr.us) — one paste, one service
+
+Runs the **whole game + leaderboard as one service on one port** (no CORS, no
+mixed-content), with no root needed (Node via nvm, kept alive by pm2).
+
+In your VPS SSH session:
+
+```bash
+ssh -p 11187 frog@frog02.mikr.us        # your VPS login
+
+# then on the VPS — replace <PORT> with the internal port your mikr.us
+# HTTPS web-domain forwards to (see the mikr.us panel):
+curl -fsSL https://raw.githubusercontent.com/caytec/At-Data-center-Sim/claude/ai-datacenter-simulator-teaching-o8udoe/deploy/mikrus.sh | bash -s -- <PORT>
+```
+
+The script clones the repo, builds the app (same-origin API), and starts it under
+pm2 on `<PORT>`. Then point your mikr.us web-domain at `<PORT>` and open it in a browser.
+
+- Update later: just re-run the same command.
+- Logs: `pm2 logs gigarack`. Restart: `pm2 restart gigarack`.
+- Auto-start on reboot (optional): `pm2 startup` then follow its printed command.
+- The leaderboard DB lives at `server/data/scores.db` on the VPS (persists across restarts).
+
+---
+
 Two free pieces:
 
 - **Frontend (the game):** a static PWA on **GitHub Pages** — fully automated by the
