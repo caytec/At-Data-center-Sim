@@ -1,0 +1,58 @@
+name: Deploy PWA to GitHub Pages
+
+# Builds the GigaRack web app and publishes it to the `gh-pages` branch.
+# The repo's Actions token cannot create a Pages site via the API, so enable
+# Pages ONCE in the UI (your account has the needed permission):
+#   Settings → Pages → Build and deployment → Source: "Deploy from a branch"
+#   → Branch: gh-pages → / (root) → Save.
+# Live at: https://caytec.github.io/At-Data-center-Sim/  (auto-updates on every push)
+#
+# The backend URL is injected from the repository Actions VARIABLE `API_URL`
+# (Settings → Secrets and variables → Actions → Variables). If unset, the game
+# builds in offline-leaderboard mode and is still fully playable.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - claude/ai-datacenter-simulator-teaching-o8udoe
+    paths:
+      - 'web/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-pages.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web (PWA) for GitHub Pages
+        env:
+          VITE_BASE: /At-Data-center-Sim/
+          VITE_API_URL: ${{ vars.API_URL }}
+        run: npm run build -w web
+
+      - name: Publish to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./web/dist
+          publish_branch: gh-pages
+          force_orphan: true
